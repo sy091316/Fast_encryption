@@ -7,7 +7,6 @@ def increment_count():
 #increment_count() #callfucntion => add +1 to variable "count"
 #print(count)
 
-
 sbox = [[0x63, 0x7C, 0x77, 0x7B, 0xF2, 0x6B, 0x6F, 0xC5, 0x30, 0x01, 0x67, 0x2B, 0xFE, 0xD7, 0xAB, 0x76],
              [0xCA, 0x82, 0xC9, 0x7D, 0xFA, 0x59, 0x47, 0xF0, 0xAD, 0xD4, 0xA2, 0xAF, 0x9C, 0xA4, 0x72, 0xC0],
              [0xB7, 0xFD, 0x93, 0x26, 0x36, 0x3F, 0xF7, 0xCC, 0x34, 0xA5, 0xE5, 0xF1, 0x71, 0xD8, 0x31, 0x15],
@@ -162,7 +161,7 @@ def mix_columns(matrix):
 
 
 #Addroundkey-------------------------------
-#keyschedule (notAddroundkey)
+#next keyschedule (notAddroundkey)
 def addRoundKey222(matrix, nextroundmatrix):
   temp_lastcol = []
   temp_lastcol = [matrix[3][1], matrix[3][2], matrix[3][3], matrix[3][0]]
@@ -184,68 +183,85 @@ def addRoundKey222(matrix, nextroundmatrix):
 
 
 def addKey1(state, roundkey):  #XOR current round key
-  for i in range(4):
-    for j in range(4):
-      state[i][j]  = int(state[i][j], 16)
-      roundkey[i][j] = int(roundkey[i][j], 16)
   state[0] =  list(a^b for a,b in zip(state[0], roundkey[0]))
   state[1] =  list(a^b for a,b in zip(state[1], roundkey[1]))
   state[2] =  list(a^b for a,b in zip(state[2], roundkey[2]))
   state[3] =  list(a^b for a,b in zip(state[3], roundkey[3]))
 
+def hex_to_int(matrix):
+  for i in range(4):
+    for j in range(4):
+      matrix[i][j] = int(matrix[i][j], 16)
+
+def int_to_hex(matrix):
+  for i in range(4):
+    for j in range(4):
+      matrix[i][j] = format(matrix[i][j], '02x')
 
 
-
-#ENCRYPTION
-def encrypt(bitkey_128, plaintext):
-  # Text to matrix format-------------------------
-  bitkey_128_matrix = text_To_matrix(bitkey_128)
-  plaintext_matrix = text_To_matrix(plaintext)
-  #bitkey_128_matrix = bitkey_128
-  #plaintext_matrix = plaintext
+#----------ENCRYPTION-----------------------------------
+def encrypt(matrix, round1):
   #AddRoundKey (initial Round)----------------------
   nextroundmatrix = [[],[],[],[]]
-  addRoundKey222(bitkey_128_matrix,nextroundmatrix)
-  for i in range(4):
-    for j in range(4):
-      bitkey_128_matrix[i][j] = format(bitkey_128_matrix[i][j], '02x')
-      nextroundmatrix[i][j] = format(nextroundmatrix[i][j],'02x')
-  addKey1(plaintext_matrix, bitkey_128_matrix)
-  for i in range(4):
-    for j in range(4):
-      plaintext_matrix[i][j]  = format(plaintext_matrix[i][j], '02x')
-      bitkey_128_matrix[i][j] = format(bitkey_128_matrix[i][j], '02x')
-  plaintext_matrix = transpose(plaintext_matrix)
+  addRoundKey222(round1,nextroundmatrix)
+  hex_to_int(matrix) 
+  addKey1(matrix, round1)
+  int_to_hex(matrix)
+  matrix = transpose(matrix)
   # 9 main rounds -----------------------------------
   for i in range(1, 10):
-    subBytes(plaintext_matrix)
-    shiftRows(plaintext_matrix)
-    plaintext_matrix = mix_columns(plaintext_matrix)
-    bitkey_128_matrix = nextroundmatrix
+    subBytes(matrix)
+    shiftRows(matrix)
+    matrix = mix_columns(matrix)
+    round1 = nextroundmatrix
     nextroundmatrix = [[],[],[],[]]
-    addRoundKey222(bitkey_128_matrix,nextroundmatrix)
-    for i in range(4):
-      for j in range(4):
-        bitkey_128_matrix[i][j] = format(bitkey_128_matrix[i][j], '02x')
-        nextroundmatrix[i][j] = format(nextroundmatrix[i][j],'02x')
-    bitkey_128_matrix = transpose(bitkey_128_matrix)
-    addKey1(plaintext_matrix, bitkey_128_matrix)
-    for i in range(4):
-      for j in range(4):
-        plaintext_matrix[i][j]  = format(plaintext_matrix[i][j], '02x')
-        bitkey_128_matrix[i][j] = format(bitkey_128_matrix[i][j], '02x')
+    int_to_hex(round1)
+    addRoundKey222(round1,nextroundmatrix)
+    hex_to_int(matrix)
+    round1 = transpose(round1)
+    addKey1(matrix, round1)
+    int_to_hex(matrix)
+    print("Round", i, ": ", matrix)
   # Final Round -----------------------------------
-  subBytes(plaintext_matrix)
-  shiftRows(plaintext_matrix)
-  bitkey_128_matrix = nextroundmatrix
-  bitkey_128_matrix = transpose(bitkey_128_matrix)
-  #no need addRoundkey22 because addRoundkey22 is for creating a keyschedule for the next round. Round 10 is the last round so no need to call addRoundKey22
-  addKey1(plaintext_matrix, bitkey_128_matrix)
-  for i in range(4):
-    for j in range(4):
-      plaintext_matrix[i][j]  = format(plaintext_matrix[i][j], '02x')
-      bitkey_128_matrix[i][j] = format(bitkey_128_matrix[i][j], '02x')
-  #print("done", plaintext_matrix)
-  #Final ciphertext
-  plaintext_matrix = transpose(plaintext_matrix)
-  return plaintext_matrix
+  subBytes(matrix)
+  shiftRows(matrix)
+  round1 = nextroundmatrix
+  hex_to_int(matrix)
+  round1 = transpose(round1)
+  addKey1(matrix, round1)
+  int_to_hex(matrix)
+  return matrix
+
+
+
+#--------TESTING-------------------------------------------
+#2 ways: 1. matrix -> AES -> OUTPUT OR
+         #2. plaintext -> matrix -> AES -> OUTPUT
+
+#1  Already in matrix format -> AES -> OUTPUT
+matrix = [['32', '88', '31', 'e0'], ['43', '5a', '31', '37'], ['f6', '30', '98', '07'], ['a8', '8d', 'a2', '34']]
+round1 = [['2b', '28', 'ab', '09'], ['7e', 'ae', 'f7', 'cf'], ['15', 'd2', '15', '4f'], ['16', 'a6', '88', '3c']]
+matrix = transpose(matrix)
+round1 = transpose(round1)
+
+#2 Plaintext -> AES -> OUTPUT
+#matrix = "Two One Nine Two"
+#round1 = "Thats my Kung Fu"
+#matrix = text_To_matrix(matrix)
+#round1 = text_To_matrix(round1)
+
+#CALL Function
+#Matrix format -> AES -> OUTPUT
+#https://www.youtube.com/watch?v=gP4PqVGudtg <- used this example matrix, got the same output
+
+
+#CALL FUNCTION
+#Plaintext -> AES -> Output
+#https://www.kavaliro.com/wp-content/uploads/2014/03/AES.pdf <- used this example matrix, got the same output
+#final = encrypt(matrix, round1)
+#final = transpose(final)
+#print("done", final) #final ciphertext output
+
+
+final = encrypt(matrix, round1)
+print("Done :", final)
