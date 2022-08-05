@@ -64,8 +64,7 @@ def text_To_matrix(text):
 #print(bitkey_128_matrix)
 #print(plaintext_matrix)
 
-#copied from https://www.codegrepper.com/code-examples/python/transpose+matrix+in+python+without+numpy
-# need to edit later
+#Source: https://www.codegrepper.com/code-examples/python/transpose+matrix+in+python+without+numpy
 def transpose(matrix):
     rows = len(matrix)
     columns = len(matrix[0])
